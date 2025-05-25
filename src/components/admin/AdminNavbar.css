@@ -1,0 +1,43 @@
+.admin-navbar {
+  width: 220px;
+  background-color: #2d3748;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.admin-logo {
+  margin: 0 0 2rem;
+  font-weight: bold;
+  font-size: 1.25rem;
+  text-align: center;
+}
+
+.admin-navbar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.admin-navbar li {
+  margin-bottom: 1.25rem;
+}
+
+.admin-navbar a {
+  color: #a0aec0;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  display: block;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.admin-navbar a:hover,
+.admin-navbar a.active {
+  background-color: #4a5568;
+  color: #edf2f7;
+}

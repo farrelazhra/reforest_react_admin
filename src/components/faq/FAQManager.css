@@ -1,0 +1,74 @@
+/* src/components/admin/FAQManager.css */
+.manager-container {
+  padding: 20px;
+  max-width: 900px;
+  margin: auto;
+}
+
+.manager-form {
+  margin-bottom: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.manager-form input {
+  flex: 1;
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.manager-form button {
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+}
+
+.manager-form button[type="submit"] {
+  background-color: #ffc107;
+  color: black;
+}
+
+.manager-form button[type="button"] {
+  background-color: #6c757d;
+  color: white;
+}
+
+.manager-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.manager-table th,
+.manager-table td {
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: left;
+}
+
+.manager-table th {
+  background-color: #ffc107;
+  color: black;
+}
+
+.btn-edit {
+  background-color: #17a2b8;
+  border: none;
+  padding: 6px 12px;
+  margin-right: 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  color: white;
+}
+
+.btn-delete {
+  background-color: #dc3545;
+  border: none;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  color: white;
+}
