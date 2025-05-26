@@ -1,30 +1,35 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import "./AdminNavbar.css";
+import "./AdminNavbar.css"; // kalau kamu pakai CSS eksternal
 
-const AdminNavbar = () => {
+function AdminNavbar() {
   return (
     <nav className="admin-navbar">
-      <h2 className="admin-logo">Reforest Admin</h2>
+      <h2 className="logo">Reforest Admin</h2>
       <ul>
         <li>
-          <NavLink to="/admin/pohon" className={({ isActive }) => (isActive ? "active" : "")}>
+          <NavLink to="/admin/pohon" activeclassname="active">
             Manajemen Pohon
           </NavLink>
         </li>
         <li>
-          <NavLink to="/admin/artikel" className={({ isActive }) => (isActive ? "active" : "")}>
+          <NavLink to="/admin/artikel" activeclassname="active">
             Manajemen Artikel
           </NavLink>
         </li>
         <li>
-          <NavLink to="/admin/faq" className={({ isActive }) => (isActive ? "active" : "")}>
+          <NavLink to="/admin/faq" activeclassname="active">
             Manajemen FAQ
+          </NavLink>
+        </li>
+        <li>
+          <NavLink to="/admin/user" activeclassname="active">
+            Manajemen User
           </NavLink>
         </li>
       </ul>
     </nav>
   );
-};
+}
 
 export default AdminNavbar;

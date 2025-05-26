@@ -7,6 +7,7 @@ import ArtikelManager from "../artikel/ArtikelManager";
 import FAQManager from "../faq/FAQManager";
 
 import "./AdminLayout.css";
+import UserManager from "../user/UserManager";
 
 const AdminLayout = () => {
   // Dummy auth check (replace with real logic)
@@ -24,6 +25,7 @@ const AdminLayout = () => {
           <Route path="pohon" element={<PohonManager />} />
           <Route path="artikel" element={<ArtikelManager />} />
           <Route path="faq" element={<FAQManager />} />
+          <Route path="user" element={<UserManager />} />
           <Route path="*" element={<Navigate to="pohon" />} />
         </Routes>
       </main>

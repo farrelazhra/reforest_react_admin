@@ -6,6 +6,7 @@ import AdminLayout from "./components/layout/AdminLayout";
 import PohonManager from "./components/pohon/PohonManager";
 import ArtikelManager from "./components/artikel/ArtikelManager";
 import FAQManager from "./components/faq/FAQManager";
+import UserManager from "./components/user/UserManager";
 
 import "./App.css";
 
@@ -30,6 +31,7 @@ function App() {
               <Route path="pohon" element={<PohonManager />} />
               <Route path="artikel" element={<ArtikelManager />} />
               <Route path="faq" element={<FAQManager />} />
+              <Route path="user" element={<UserManager />} /> {/* <-- Tambahkan ini */}
             </Route>
             <Route path="*" element={<Navigate to="/admin" />} />
           </>
