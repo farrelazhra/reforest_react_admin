@@ -3,15 +3,19 @@ import axios from "axios";
 import "./UserManager.css";
 import { Plus } from "lucide-react";
 
+const defaultImage = "https://via.placeholder.com/150";
+
 function UserManager() {
   const [users, setUsers] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
   const [formData, setFormData] = useState({
-    name: "",
+    username: "",
     email: "",
     role: "",
-    image: "",
+    image: null,
+    password: "",
   });
 
   useEffect(() => {
@@ -22,35 +26,57 @@ function UserManager() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await axios.get("http://localhost:8000/api/users", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const res = await axios.get("http://localhost:8000/api/admin/users", {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const users = res.data.data;
+      console.log("Raw users data:", users);
 
-      const formatted = users.map((user) => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role || "User",
-        image: user.user_image
-          ? `http://localhost:8000/storage/images/${user.user_image.filename}`
-          : "https://via.placeholder.com/150",
-      }));
+      const formatted = users.map((user) => {
+        let imageUrl = defaultImage;
+        
+        // Debug: Log individual user data
+        console.log("Processing user:", user);
+        console.log("User image data:", user.user_image || user.userImage);
+        
+        // Cek berbagai kemungkinan struktur data
+        const userImageData = user.user_image || user.userImage;
+        
+        if (userImageData && userImageData.filename) {
+          imageUrl = `http://localhost:8000/storage/images/${userImageData.filename}`;
+          console.log("Generated image URL:", imageUrl);
+        }
+        
+        return {
+          id: user.id,
+          username: user.username || user.name || "",
+          email: user.email,
+          role: user.role || "User",
+          image: imageUrl,
+        };
+      });
 
+      console.log("Formatted users:", formatted);
       setUsers(formatted);
     } catch (error) {
       console.error("Gagal mengambil semua user:", error);
-      alert("Gagal mengambil semua user");
+      alert("Gagal mengambil semua user, cek console.");
     }
   };
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === "image") {
-      setFormData((prev) => ({ ...prev, image: files[0] }));
+      const file = files[0];
+      setFormData((prev) => ({ ...prev, image: file }));
+
+      // buat preview
+      if (file) {
+        setPreviewImage(URL.createObjectURL(file));
+      } else {
+        setPreviewImage(null);
+      }
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
@@ -59,50 +85,83 @@ function UserManager() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!editingUser) {
-      alert("Fitur tambah user belum tersedia. Hanya edit user.");
-      return;
-    }
-
     try {
       const token = localStorage.getItem("token");
-
       const form = new FormData();
-      form.append("name", formData.name);
+
+      form.append("username", formData.username);
       form.append("email", formData.email);
       form.append("role", formData.role);
-      if (formData.image) {
-        form.append("profile_photo", formData.image); // opsional jika API support upload image
+
+      if (!editingUser && formData.password.trim() === "") {
+        alert("Password wajib diisi untuk user baru");
+        return;
       }
 
-      await axios.post(
-        `http://localhost:8000/api/users/update/${editingUser.id}?_method=PUT`,
-        form,
-        {
+      if (formData.password) {
+        form.append("password", formData.password);
+      }
+
+      if (formData.image instanceof File) {
+        form.append("profile_photo", formData.image);
+      }
+
+      let response;
+      if (editingUser) {
+        form.append("_method", "PUT");
+        response = await axios.post(
+          `http://localhost:8000/api/admin/users/${editingUser.id}`,
+          form,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        alert("User berhasil diperbarui");
+      } else {
+        response = await axios.post("http://localhost:8000/api/admin/users", form, {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
           },
-        }
-      );
+        });
+        alert("User berhasil ditambahkan");
+      }
 
-      alert("User berhasil diperbarui");
+      console.log("Response:", response.data);
+      
       fetchAllUsers();
       setShowForm(false);
+      setEditingUser(null);
+      setFormData({
+        username: "",
+        email: "",
+        role: "",
+        image: null,
+        password: "",
+      });
+      setPreviewImage(null);
     } catch (error) {
-      console.error("Gagal update:", error);
-      alert("Gagal update user");
+      console.error("Gagal simpan user:", error);
+      if (error.response) {
+        console.error("Error response:", error.response.data);
+      }
+      alert("Gagal simpan user, cek console.");
     }
   };
 
   const handleEdit = (user) => {
     setEditingUser(user);
     setFormData({
-      name: user.name,
+      username: user.username,
       email: user.email,
       role: user.role,
-      image: "",
+      image: null,
+      password: "",
     });
+
+    // Set preview image
+    setPreviewImage(user.image !== defaultImage ? user.image : null);
     setShowForm(true);
   };
 
@@ -112,7 +171,7 @@ function UserManager() {
     try {
       const token = localStorage.getItem("token");
 
-      await axios.delete(`http://localhost:8000/api/users/delete/${id}`, {
+      await axios.delete(`http://localhost:8000/api/admin/users/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -126,6 +185,11 @@ function UserManager() {
     }
   };
 
+  const handleImageError = (e, user) => {
+    console.error("Image failed to load:", user.image);
+    e.target.src = defaultImage;
+  };
+
   return (
     <div className="user-manager">
       <h2>Manajemen User</h2>
@@ -133,9 +197,14 @@ function UserManager() {
       <div className="user-grid">
         {users.map((user) => (
           <div key={user.id} className="user-card">
-            <img src={user.image} alt={user.name} />
+            <img
+              src={user.image}
+              alt={user.username}
+              onError={(e) => handleImageError(e, user)}
+              onLoad={() => console.log("Image loaded successfully:", user.image)}
+            />
             <div className="info">
-              <h4>{user.name}</h4>
+              <h4>{user.username}</h4>
               <p>{user.email}</p>
               <p>
                 <strong>{user.role}</strong>
@@ -156,9 +225,9 @@ function UserManager() {
           <h3>{editingUser ? "Edit User" : "Tambah User"}</h3>
           <form onSubmit={handleSubmit}>
             <input
-              name="name"
-              placeholder="Nama"
-              value={formData.name}
+              name="username"
+              placeholder="Username"
+              value={formData.username}
               onChange={handleChange}
               required
             />
@@ -168,6 +237,7 @@ function UserManager() {
               value={formData.email}
               onChange={handleChange}
               required
+              type="email"
             />
             <input
               name="role"
@@ -177,12 +247,55 @@ function UserManager() {
               required
             />
             <input
+              type="password"
+              name="password"
+              placeholder={editingUser ? "Password (kosongkan jika tidak diubah)" : "Password"}
+              value={formData.password}
+              onChange={handleChange}
+              required={!editingUser}
+            />
+            <input
               type="file"
               name="image"
               onChange={handleChange}
               accept="image/*"
             />
+
+            {/* Preview image */}
+            {previewImage && (
+              <div style={{ marginTop: "10px" }}>
+                <p>Preview:</p>
+                <img
+                  src={previewImage}
+                  alt="Preview"
+                  style={{ width: "150px", borderRadius: "8px" }}
+                  onError={(e) => {
+                    console.error("Preview image error:", previewImage);
+                    e.target.style.display = "none";
+                  }}
+                />
+              </div>
+            )}
+
             <button type="submit">Simpan</button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowForm(false);
+                setEditingUser(null);
+                setPreviewImage(null);
+                setFormData({
+                  username: "",
+                  email: "",
+                  role: "",
+                  image: null,
+                  password: "",
+                });
+              }}
+              style={{ marginLeft: "10px" }}
+            >
+              Batal
+            </button>
           </form>
         </div>
       )}
@@ -192,7 +305,8 @@ function UserManager() {
         onClick={() => {
           setShowForm(true);
           setEditingUser(null);
-          setFormData({ name: "", email: "", role: "", image: "" });
+          setFormData({ username: "", email: "", role: "", image: null, password: "" });
+          setPreviewImage(null);
         }}
       >
         <Plus />

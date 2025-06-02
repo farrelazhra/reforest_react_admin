@@ -17,6 +17,8 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
+  min-height: 230px;
+  justify-content: flex-start;
 }
 
 .user-card img {
@@ -24,7 +26,34 @@
   height: 90px;
   border-radius: 50%;
   object-fit: cover;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 0 6px rgba(0,0,0,0.1);
+  background-color: #eee;
+  flex-shrink: 0;
+}
+
+.user-card .info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  word-break: break-word;
+  min-height: 4.5rem;
+}
+
+.user-card .info h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #222;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-card .info p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #555;
 }
 
 .user-card .actions {
