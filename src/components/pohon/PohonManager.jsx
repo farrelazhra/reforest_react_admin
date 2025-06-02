@@ -3,8 +3,8 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "./PohonManager.css";
 
-const API_URL = "http://localhost:8000/api"; // Base URL API (backend API endpoint)
-const BASE_URL = "http://localhost:8000"; // Base URL untuk akses gambar statis
+const API_URL = "http://localhost:8000/api"; // URL API untuk pohon
+const BASE_URL = "http://localhost:8000"; // Base URL untuk akses gambar
 
 const customIcon = new L.Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
@@ -54,7 +54,6 @@ const PohonManager = () => {
           tanggal_tanam: p.tanggal_tanam,
           lokasi: { lat: parseFloat(p.lat), lng: parseFloat(p.long) },
           user_id: p.user_id,
-          // Akses gambar dari folder storage publik Laravel tanpa /api
           gambar: p.images && p.images.length > 0 ? `${BASE_URL}/storage/images/${p.images[0].filename}` : null,
         }));
         setPohonList(formatted);
@@ -132,7 +131,7 @@ const PohonManager = () => {
     try {
       let response;
       if (editingPohon) {
-        formData.append("_method", "PUT"); // Jika backend pakai PUT lewat POST
+        formData.append("_method", "PUT");
         response = await fetch(`${API_URL}/pohonku/${editingPohon.id}`, {
           method: "POST",
           body: formData,
@@ -175,8 +174,6 @@ const PohonManager = () => {
     }
   };
 
-  const defaultImage = "https://images.unsplash.com/photo-1448375240586-882707db888b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
-
   return (
     <div className="pohon-manager-container">
       <h1>Manajemen Pohon</h1>
@@ -192,34 +189,24 @@ const PohonManager = () => {
           {pohonList.map((pohon) => (
             <div className="pohon-item" key={pohon.id}>
               <img
-                src={pohon.gambar || defaultImage}
+                src={pohon.gambar || "https://images.unsplash.com/photo-1448375240586-882707db888b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"}
                 alt={pohon.nama}
                 className="pohon-image"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = defaultImage;
+                  e.target.src = "https://images.unsplash.com/photo-1448375240586-882707db888b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
                 }}
               />
               <div className="pohon-info">
                 <h3>{pohon.nama}</h3>
-                <p>
-                  <b>Jenis:</b> {pohon.jenis}
-                </p>
-                <p>
-                  <b>Tanggal Tanam:</b> {new Date(pohon.tanggal_tanam).toLocaleDateString()}
-                </p>
-                <p>
-                  <b>Penanam (User ID):</b> {pohon.user_id}
-                </p>
-                <p>
-                  <b>Lokasi:</b> {pohon.lokasi.lat.toFixed(5)}, {pohon.lokasi.lng.toFixed(5)}
-                </p>
+                <p><b>Jenis:</b> {pohon.jenis}</p>
+                <p><b>Tanggal Tanam:</b> {new Date(pohon.tanggal_tanam).toLocaleDateString()}</p>
+                <p><b>Penanam (User ID):</b> {pohon.user_id}</p>
+                <p><b>Lokasi:</b> {pohon.lokasi.lat.toFixed(5)}, {pohon.lokasi.lng.toFixed(5)}</p>
               </div>
               <div className="pohon-actions">
                 <button onClick={() => openEditModal(pohon)}>Edit</button>
-                <button className="delete-btn" onClick={() => handleDelete(pohon.id)}>
-                  Hapus
-                </button>
+                <button className="delete-btn" onClick={() => handleDelete(pohon.id)}>Hapus</button>
               </div>
             </div>
           ))}
@@ -227,50 +214,46 @@ const PohonManager = () => {
       )}
 
       {modalOpen && (
-        <div className="modal">
-          <div className="modal-content">
-            <h2>{editingPohon ? "Edit Pohon" : "Tambah Pohon"}</h2>
-            <form onSubmit={handleSubmit}>
-              <label>
-                Nama Pohon:
-                <input type="text" name="nama" value={form.nama} onChange={handleChange} required />
-              </label>
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-content">
+              <h2>{editingPohon ? "Edit Pohon" : "Tambah Pohon"}</h2>
+              <form onSubmit={handleSubmit}>
+                <label>
+                  Nama Pohon:
+                  <input type="text" name="nama" value={form.nama} onChange={handleChange} required />
+                </label>
 
-              <label>
-                Jenis Pohon:
-                <input type="text" name="jenis" value={form.jenis} onChange={handleChange} required />
-              </label>
+                <label>
+                  Jenis Pohon:
+                  <input type="text" name="jenis" value={form.jenis} onChange={handleChange} required />
+                </label>
 
-              <label>
-                Tanggal Tanam:
-                <input type="date" name="tanggal_tanam" value={form.tanggal_tanam} onChange={handleChange} required />
-              </label>
+                <label>
+                  Tanggal Tanam:
+                  <input type="date" name="tanggal_tanam" value={form.tanggal_tanam} onChange={handleChange} required />
+                </label>
 
-              <label>
-                User ID:
-                <input type="text" name="user_id" value={form.user_id} onChange={handleChange} required />
-              </label>
+                <label>
+                  Lokasi Pohon:
+                  <MapContainer center={form.lokasi || [0, 0]} zoom={13} style={{ height: "300px" }}>
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    <LocationPicker position={form.lokasi} setPosition={(latlng) => setForm((prev) => ({ ...prev, lokasi: latlng }))} />
+                  </MapContainer>
+                </label>
 
-              <label>
-                Lokasi (klik pada peta):
-                <MapContainer center={form.lokasi || { lat: -7.98, lng: 112.63 }} zoom={13} style={{ height: 200, width: "100%" }}>
-                  <TileLayer attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  <LocationPicker position={form.lokasi} setPosition={(pos) => setForm((prev) => ({ ...prev, lokasi: pos }))} />
-                </MapContainer>
-              </label>
+                <label>
+                  Gambar:
+                  <input type="file" onChange={handleImageChange} />
+                  {form.gambarPreview && <img src={form.gambarPreview} alt="Preview" className="image-preview" />}
+                </label>
 
-              <label>
-                Gambar Pohon:
-                <input type="file" accept="image/*" onChange={handleImageChange} />
-              </label>
-
-              {form.gambarPreview && <img src={form.gambarPreview} alt="Preview" style={{ maxWidth: "100%", maxHeight: 200, marginTop: 10 }} />}
-
-              <button type="submit">{editingPohon ? "Update" : "Tambah"}</button>
-              <button type="button" onClick={() => setModalOpen(false)}>
-                Batal
-              </button>
-            </form>
+                <button type="submit" className="submit-btn">{editingPohon ? "Update" : "Simpan"}</button>
+                <button type="button" onClick={() => setModalOpen(false)} className="cancel-btn">Tutup</button>
+              </form>
+            </div>
           </div>
         </div>
       )}

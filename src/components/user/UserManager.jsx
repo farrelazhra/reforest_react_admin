@@ -1,68 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import "./UserManager.css";
 import { Plus } from "lucide-react";
 
-const dummyUsers = [
-  {
-    id: 1,
-    name: "Farrel Azhra",
-    email: "farrel@example.com",
-    role: "Admin",
-    image: "https://randomuser.me/api/portraits/men/1.jpg",
-  },
-  {
-    id: 2,
-    name: "Aldo Imam",
-    email: "aldo@example.com",
-    role: "Editor",
-    image: "https://randomuser.me/api/portraits/men/2.jpg",
-  },
-  {
-    id: 3,
-    name: "Muhammad Anam",
-    email: "anam@example.com",
-    role: "Editor",
-    image: "https://randomuser.me/api/portraits/men/1.jpg",
-  },
-  {
-    id: 4,
-    name: "Daniel Budianto",
-    email: "daniel@example.com",
-    role: "Editor",
-    image: "https://randomuser.me/api/portraits/men/2.jpg",
-  },
-  {
-    id: 5,
-    name: "Ridho Kamila",
-    email: "ridho@example.com",
-    role: "Editor",
-    image: "https://randomuser.me/api/portraits/men/1.jpg",
-  },
-  {
-    id: 6,
-    name: "Panji Jumanji",
-    email: "panji@example.com",
-    role: "Editor",
-    image: "https://randomuser.me/api/portraits/men/2.jpg",
-  },
-  {
-    id: 7,
-    name: "Shinta Kumala",
-    email: "shinta@example.com",
-    role: "Editor",
-    image: "https://randomuser.me/api/portraits/men/1.jpg",
-  },
-  {
-    id: 8,
-    name: "Haris Luhur",
-    email: "haris@example.com",
-    role: "Editor",
-    image: "https://randomuser.me/api/portraits/men/2.jpg",
-  },
-];
-
 function UserManager() {
-  const [users, setUsers] = useState(dummyUsers);
+  const [users, setUsers] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState({
@@ -72,36 +14,122 @@ function UserManager() {
     image: "",
   });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  useEffect(() => {
+    fetchAllUsers();
+  }, []);
+
+  const fetchAllUsers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await axios.get("http://localhost:8000/api/users", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const users = res.data.data;
+
+      const formatted = users.map((user) => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role || "User",
+        image: user.user_image
+          ? `http://localhost:8000/storage/images/${user.user_image.filename}`
+          : "https://via.placeholder.com/150",
+      }));
+
+      setUsers(formatted);
+    } catch (error) {
+      console.error("Gagal mengambil semua user:", error);
+      alert("Gagal mengambil semua user");
+    }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (editingUser) {
-      setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? { ...formData, id: u.id } : u)));
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    if (name === "image") {
+      setFormData((prev) => ({ ...prev, image: files[0] }));
     } else {
-      setUsers((prev) => [...prev, { ...formData, id: Date.now() }]);
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
-    setFormData({ name: "", email: "", role: "", image: "" });
-    setEditingUser(null);
-    setShowForm(false);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!editingUser) {
+      alert("Fitur tambah user belum tersedia. Hanya edit user.");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const form = new FormData();
+      form.append("name", formData.name);
+      form.append("email", formData.email);
+      form.append("role", formData.role);
+      if (formData.image) {
+        form.append("profile_photo", formData.image); // opsional jika API support upload image
+      }
+
+      await axios.post(
+        `http://localhost:8000/api/users/update/${editingUser.id}?_method=PUT`,
+        form,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      alert("User berhasil diperbarui");
+      fetchAllUsers();
+      setShowForm(false);
+    } catch (error) {
+      console.error("Gagal update:", error);
+      alert("Gagal update user");
+    }
   };
 
   const handleEdit = (user) => {
     setEditingUser(user);
-    setFormData(user);
+    setFormData({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      image: "",
+    });
     setShowForm(true);
   };
 
-  const handleDelete = (id) => {
-    setUsers((prev) => prev.filter((u) => u.id !== id));
+  const handleDelete = async (id) => {
+    if (!window.confirm("Yakin ingin menghapus user ini?")) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      await axios.delete(`http://localhost:8000/api/users/delete/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      alert("User berhasil dihapus");
+      fetchAllUsers();
+    } catch (error) {
+      console.error("Gagal hapus:", error);
+      alert("Gagal hapus user");
+    }
   };
 
   return (
     <div className="user-manager">
       <h2>Manajemen User</h2>
+
       <div className="user-grid">
         {users.map((user) => (
           <div key={user.id} className="user-card">
@@ -127,10 +155,33 @@ function UserManager() {
         <div className="form-container">
           <h3>{editingUser ? "Edit User" : "Tambah User"}</h3>
           <form onSubmit={handleSubmit}>
-            <input name="name" placeholder="Nama" value={formData.name} onChange={handleChange} required />
-            <input name="email" placeholder="Email" value={formData.email} onChange={handleChange} required />
-            <input name="role" placeholder="Peran" value={formData.role} onChange={handleChange} required />
-            <input name="image" placeholder="URL Gambar" value={formData.image} onChange={handleChange} />
+            <input
+              name="name"
+              placeholder="Nama"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
+            <input
+              name="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+            <input
+              name="role"
+              placeholder="Role"
+              value={formData.role}
+              onChange={handleChange}
+              required
+            />
+            <input
+              type="file"
+              name="image"
+              onChange={handleChange}
+              accept="image/*"
+            />
             <button type="submit">Simpan</button>
           </form>
         </div>
