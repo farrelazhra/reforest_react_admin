@@ -5,6 +5,10 @@ import "./ArtikelManager.css";
 const defaultImage =
   "https://images.unsplash.com/photo-1448375240586-882707db888b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60";
 
+const api = axios.create({
+  baseURL: "http://localhost:8000/api/artikel",
+});
+
 const ArtikelManager = () => {
   const [artikelList, setArtikelList] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -13,15 +17,20 @@ const ArtikelManager = () => {
     id: null,
     title: "",
     isi: "",
+    author: "",
     tanggal_publikasi: "",
-    gambar: null,
+    image: null,
   });
   const [previewImage, setPreviewImage] = useState(null);
 
   const fetchArtikel = async () => {
     try {
-      const response = await axios.get("http://localhost:8000/api/artikel/all");
-      setArtikelList(response.data.data);
+      const response = await api.get("/all");
+      if (response.data.success) {
+        setArtikelList(response.data.data);
+      } else {
+        console.error("Gagal mengambil data artikel:", response.data.message);
+      }
     } catch (error) {
       console.error("Gagal mengambil data artikel:", error);
     }
@@ -37,8 +46,9 @@ const ArtikelManager = () => {
       id: null,
       title: "",
       isi: "",
+      author: "",
       tanggal_publikasi: "",
-      gambar: null,
+      image: null,
     });
     setPreviewImage(null);
     setIsModalOpen(true);
@@ -50,11 +60,14 @@ const ArtikelManager = () => {
       id: artikel.id,
       title: artikel.title,
       isi: artikel.isi,
+      author: artikel.author || "",
       tanggal_publikasi: artikel.tanggal_publikasi ?? "",
-      gambar: null,
+      image: null,
     });
     setPreviewImage(
-      artikel.images && artikel.images.length > 0 ? artikel.images[0].image_url : null
+      artikel.images && artikel.images.length > 0
+        ? `http://localhost:8000/storage/images/${artikel.images[0].filename}`
+        : null
     );
     setIsModalOpen(true);
   };
@@ -68,44 +81,64 @@ const ArtikelManager = () => {
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
-    setCurrentArtikel({ ...currentArtikel, gambar: file });
+    setCurrentArtikel({ ...currentArtikel, image: file });
     setPreviewImage(URL.createObjectURL(file));
   };
 
-  const handleSaveArtikel = async (e) => {
-    e.preventDefault();
+const handleSaveArtikel = async (e) => {
+  e.preventDefault();
 
-    const formData = new FormData();
-    formData.append("title", currentArtikel.title);
-    formData.append("isi", currentArtikel.isi);
+  const formData = new FormData();
+  formData.append("title", currentArtikel.title);
+  formData.append("isi", currentArtikel.isi);
+  formData.append("author", currentArtikel.author);
+  if (currentArtikel.tanggal_publikasi) {
     formData.append("tanggal_publikasi", currentArtikel.tanggal_publikasi);
-    if (currentArtikel.gambar instanceof File) {
-      formData.append("gambar", currentArtikel.gambar);
+  }
+  if (currentArtikel.image instanceof File) {
+    formData.append("image", currentArtikel.image);
+  }
+
+  try {
+    let res;
+    if (isEditMode) {
+      formData.append("_method", "PUT");  // Method spoofing
+      res = await api.post(`update/${currentArtikel.id}`, formData, {
+        // jangan set Content-Type, biar axios otomatis atur boundary
+      });
+    } else {
+      res = await api.post("post", formData);
     }
 
-    try {
-      if (isEditMode) {
-        await axios.put(
-          `http://localhost:8000/api/artikel/update/${currentArtikel.id}`,
-          formData
-        );
-      } else {
-        await axios.post("http://localhost:8000/api/artikel/post", formData);
-      }
+    // cek response dari backend
+    console.log("Response:", res.data);
+
+    if (res.data.success || res.data.status === "success") {
       fetchArtikel();
       closeModal();
-    } catch (error) {
-      console.error("Gagal menyimpan artikel:", error);
+      alert(isEditMode ? "Berhasil mengupdate artikel" : "Berhasil menambahkan artikel");
+    } else {
+      alert("Gagal menyimpan artikel: " + (res.data.message || "Unknown error"));
     }
-  };
+  } catch (error) {
+    console.error("Gagal menyimpan artikel:", error);
+    alert(
+      error.response?.data?.message || "Gagal menyimpan artikel, cek console."
+    );
+  }
+};
+
 
   const handleDeleteArtikel = async (id) => {
     if (window.confirm("Yakin ingin menghapus artikel ini?")) {
       try {
-        await axios.delete(`http://localhost:8000/api/artikel/delete/${id}`);
+        await api.delete(`delete/${id}`);
         fetchArtikel();
       } catch (error) {
         console.error("Gagal menghapus artikel:", error);
+        alert(
+          error.response?.data?.message || "Gagal menghapus artikel, cek console."
+        );
       }
     }
   };
@@ -118,7 +151,7 @@ const ArtikelManager = () => {
           artikelList.map((artikel) => {
             const imageUrl =
               artikel.images && artikel.images.length > 0
-                ? artikel.images[0].image_url
+                ? `http://localhost:8000/storage/images/${artikel.images[0].filename}`
                 : defaultImage;
 
             return (
@@ -137,6 +170,7 @@ const ArtikelManager = () => {
                       ? new Date(artikel.tanggal_publikasi).toLocaleDateString()
                       : "Tanggal tidak tersedia"}
                   </p>
+                  <p><strong>Author(ID USER):</strong> {artikel.author || "-"}</p>
                   <div className="artikel-actions">
                     <button onClick={() => openEditModal(artikel)} className="btn-edit">
                       Edit
@@ -187,13 +221,22 @@ const ArtikelManager = () => {
                 />
               </label>
               <label>
+                Author(ID USER):
+                <input
+                  type="text"
+                  name="author"
+                  value={currentArtikel.author}
+                  onChange={handleChange}
+                  required
+                />
+              </label>
+              <label>
                 Tanggal Publikasi:
                 <input
                   type="date"
                   name="tanggal_publikasi"
                   value={currentArtikel.tanggal_publikasi}
                   onChange={handleChange}
-                  required
                 />
               </label>
               <label>
