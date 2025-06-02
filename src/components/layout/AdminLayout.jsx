@@ -1,25 +1,30 @@
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 
 import AdminNavbar from "../admin/AdminNavbar";
 import PohonManager from "../pohon/PohonManager";
 import ArtikelManager from "../artikel/ArtikelManager";
 import FAQManager from "../faq/FAQManager";
-
-import "./AdminLayout.css";
 import UserManager from "../user/UserManager";
 
+import "./AdminLayout.css";
+
 const AdminLayout = () => {
-  // Dummy auth check (replace with real logic)
-  const isLoggedIn = true;
+  const navigate = useNavigate();
+  const isLoggedIn = true; // sesuaikan dengan autentikasi sesungguhnya
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/adminlogin');
+  };
 
   if (!isLoggedIn) {
-    return <Navigate to="/" />;
+    return <Navigate to="/adminlogin" />;
   }
 
   return (
     <div className="admin-layout">
-      <AdminNavbar />
+      <AdminNavbar onLogout={handleLogout} />
       <main className="admin-content">
         <Routes>
           <Route path="pohon" element={<PohonManager />} />

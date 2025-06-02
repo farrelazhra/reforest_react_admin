@@ -1,8 +1,8 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import "./AdminNavbar.css"; // kalau kamu pakai CSS eksternal
+import "./AdminNavbar.css";
 
-function AdminNavbar() {
+function AdminNavbar({ onLogout }) {
   return (
     <nav className="admin-navbar">
       <h2 className="logo">Reforest Admin</h2>
@@ -26,6 +26,25 @@ function AdminNavbar() {
           <NavLink to="/admin/user" activeclassname="active">
             Manajemen User
           </NavLink>
+        </li>
+        <li>
+          <button 
+            className="logout-btn"
+            onClick={onLogout}
+            style={{
+              backgroundColor: '#e53935',
+              border: 'none',
+              borderRadius: '5px',
+              color: 'white',
+              padding: '6px 12px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '14px',
+              marginLeft: '10px'
+            }}
+          >
+            Logout
+          </button>
         </li>
       </ul>
     </nav>
