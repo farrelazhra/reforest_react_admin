@@ -18,7 +18,6 @@ const ArtikelManager = () => {
     title: "",
     isi: "",
     author: "",
-    tanggal_publikasi: "",
     image: null,
   });
   const [previewImage, setPreviewImage] = useState(null);
@@ -47,7 +46,6 @@ const ArtikelManager = () => {
       title: "",
       isi: "",
       author: "",
-      tanggal_publikasi: "",
       image: null,
     });
     setPreviewImage(null);
@@ -61,7 +59,6 @@ const ArtikelManager = () => {
       title: artikel.title,
       isi: artikel.isi,
       author: artikel.author || "",
-      tanggal_publikasi: artikel.tanggal_publikasi ?? "",
       image: null,
     });
     setPreviewImage(
@@ -85,49 +82,38 @@ const ArtikelManager = () => {
     setPreviewImage(URL.createObjectURL(file));
   };
 
-const handleSaveArtikel = async (e) => {
-  e.preventDefault();
+  const handleSaveArtikel = async (e) => {
+    e.preventDefault();
 
-  const formData = new FormData();
-  formData.append("title", currentArtikel.title);
-  formData.append("isi", currentArtikel.isi);
-  formData.append("author", currentArtikel.author);
-  if (currentArtikel.tanggal_publikasi) {
-    formData.append("tanggal_publikasi", currentArtikel.tanggal_publikasi);
-  }
-  if (currentArtikel.image instanceof File) {
-    formData.append("image", currentArtikel.image);
-  }
-
-  try {
-    let res;
-    if (isEditMode) {
-      formData.append("_method", "PUT");  // Method spoofing
-      res = await api.post(`update/${currentArtikel.id}`, formData, {
-        // jangan set Content-Type, biar axios otomatis atur boundary
-      });
-    } else {
-      res = await api.post("post", formData);
+    const formData = new FormData();
+    formData.append("title", currentArtikel.title);
+    formData.append("isi", currentArtikel.isi);
+    formData.append("author", currentArtikel.author);
+    if (currentArtikel.image instanceof File) {
+      formData.append("image", currentArtikel.image);
     }
 
-    // cek response dari backend
-    console.log("Response:", res.data);
+    try {
+      let res;
+      if (isEditMode) {
+        formData.append("_method", "PUT");
+        res = await api.post(`update/${currentArtikel.id}`, formData);
+      } else {
+        res = await api.post("post", formData);
+      }
 
-    if (res.data.success || res.data.status === "success") {
-      fetchArtikel();
-      closeModal();
-      alert(isEditMode ? "Berhasil mengupdate artikel" : "Berhasil menambahkan artikel");
-    } else {
-      alert("Gagal menyimpan artikel: " + (res.data.message || "Unknown error"));
+      if (res.data.success || res.data.status === "success") {
+        fetchArtikel();
+        closeModal();
+        alert(isEditMode ? "Berhasil mengupdate artikel" : "Berhasil menambahkan artikel");
+      } else {
+        alert("Gagal menyimpan artikel: " + (res.data.message || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("Gagal menyimpan artikel:", error);
+      alert(error.response?.data?.message || "Gagal menyimpan artikel, cek console.");
     }
-  } catch (error) {
-    console.error("Gagal menyimpan artikel:", error);
-    alert(
-      error.response?.data?.message || "Gagal menyimpan artikel, cek console."
-    );
-  }
-};
-
+  };
 
   const handleDeleteArtikel = async (id) => {
     if (window.confirm("Yakin ingin menghapus artikel ini?")) {
@@ -136,11 +122,14 @@ const handleSaveArtikel = async (e) => {
         fetchArtikel();
       } catch (error) {
         console.error("Gagal menghapus artikel:", error);
-        alert(
-          error.response?.data?.message || "Gagal menghapus artikel, cek console."
-        );
+        alert(error.response?.data?.message || "Gagal menghapus artikel, cek console.");
       }
     }
+  };
+
+  const truncateIsi = (text) => {
+    if (text.length <= 150) return text;
+    return text.substring(0, 150) + "...";
   };
 
   return (
@@ -154,6 +143,8 @@ const handleSaveArtikel = async (e) => {
                 ? `http://localhost:8000/storage/images/${artikel.images[0].filename}`
                 : defaultImage;
 
+            const displayDate = artikel.tanggal_publikasi || artikel.created_at;
+
             return (
               <div key={artikel.id} className="artikel-card">
                 <img
@@ -164,10 +155,10 @@ const handleSaveArtikel = async (e) => {
                 />
                 <div className="artikel-content">
                   <h3>{artikel.title}</h3>
-                  <p>{artikel.isi}</p>
+                  <p>{truncateIsi(artikel.isi)}</p>
                   <p className="artikel-date">
-                    {artikel.tanggal_publikasi
-                      ? new Date(artikel.tanggal_publikasi).toLocaleDateString()
+                    {displayDate
+                      ? new Date(displayDate).toLocaleDateString()
                       : "Tanggal tidak tersedia"}
                   </p>
                   <p><strong>Author(ID USER):</strong> {artikel.author || "-"}</p>
@@ -228,15 +219,6 @@ const handleSaveArtikel = async (e) => {
                   value={currentArtikel.author}
                   onChange={handleChange}
                   required
-                />
-              </label>
-              <label>
-                Tanggal Publikasi:
-                <input
-                  type="date"
-                  name="tanggal_publikasi"
-                  value={currentArtikel.tanggal_publikasi}
-                  onChange={handleChange}
                 />
               </label>
               <label>
