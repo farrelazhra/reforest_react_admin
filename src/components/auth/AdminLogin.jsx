@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './AdminLogin.css'; // CSS yang kamu kasih sebelumnya
+import './AdminLogin.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/auth';
 
@@ -28,10 +28,12 @@ function Login({ onLoginSuccess }) {
       if (!res.ok) {
         setErrorMsg(data.message || 'Login gagal');
       } else {
+        // Simpan token dan user di localStorage
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        onLoginSuccess && onLoginSuccess();
-        navigate('/home');
+        // Kirim token ke parent supaya bisa disimpan di state App.js
+        onLoginSuccess && onLoginSuccess(data.token);
+        navigate('/home'); // atau ke halaman lain sesuai app kamu
       }
     } catch (err) {
       setErrorMsg('Terjadi kesalahan jaringan');
