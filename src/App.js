@@ -21,16 +21,26 @@ function App() {
   const [userEmail, setUserEmail] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Ambil token dan email saat pertama kali load
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    const storedEmail = localStorage.getItem("userEmail");
-    setToken(storedToken);
-    setUserEmail(storedEmail);
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get("token");
+
+    if (urlToken) {
+      // Simpan token ke localStorage
+      localStorage.setItem("token", urlToken);
+      setToken(urlToken);
+      // Bersihkan URL dari token
+      window.history.replaceState({}, document.title, "/admin");
+    } else {
+      const storedToken = localStorage.getItem("token");
+      const storedEmail = localStorage.getItem("userEmail");
+      setToken(storedToken);
+      setUserEmail(storedEmail);
+    }
+
     setLoading(false);
   }, []);
 
-  // Saat login berhasil, simpan token dan email
   const handleLoginSuccess = (newToken, email) => {
     localStorage.setItem("token", newToken);
     localStorage.setItem("userEmail", email);
@@ -38,13 +48,14 @@ function App() {
     setUserEmail(email);
   };
 
-  // Saat logout, hapus token dan email
-  const onLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userEmail");
-    setToken(null);
-    setUserEmail(null);
-  };
+const onLogout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("userEmail");
+  setToken(null);
+  setUserEmail(null);
+  window.location.href = "http://localhost:3000/login"; // Redirect ke halaman login utama
+};
+
 
   if (loading) {
     return <div>Loading...</div>;
@@ -70,16 +81,13 @@ function AdminLoginWrapper({ token, userEmail, onLogout, onLoginSuccess }) {
   useEffect(() => {
     if (token && loginEmail) {
       if (loginEmail === userEmail) {
-        // Kalau user sama, langsung redirect ke /admin/pohon tanpa logout
         navigate("/admin/pohon", { replace: true });
         setIsLoggingOut(false);
       } else {
-        // Kalau beda user, logout dulu
         setIsLoggingOut(true);
         onLogout();
       }
     } else if (!token) {
-      // Kalau token gak ada, siap tampilkan login form
       setIsLoggingOut(false);
     }
   }, [token, loginEmail, userEmail, onLogout, navigate]);
@@ -93,7 +101,6 @@ function AdminLoginWrapper({ token, userEmail, onLogout, onLoginSuccess }) {
       onLoginSuccess={(newToken, email) => {
         setLoginEmail(email);
         onLoginSuccess(newToken, email);
-        // Redirect akan dilakukan di useEffect di atas
       }}
     />
   );

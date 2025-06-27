@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom"; // ← tidak perlu useNavigate lagi
 
 import AdminNavbar from "../admin/AdminNavbar";
 import PohonManager from "../pohon/PohonManager";
@@ -10,12 +10,12 @@ import UserManager from "../user/UserManager";
 import "./AdminLayout.css";
 
 const AdminLayout = () => {
-  const navigate = useNavigate();
-  const isLoggedIn = true; // sesuaikan dengan autentikasi sesungguhnya
+  const isLoggedIn = !!localStorage.getItem('token');
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    navigate('/adminlogin');
+    localStorage.removeItem('userEmail');
+    window.location.href = 'http://localhost:3000/login';
   };
 
   if (!isLoggedIn) {
